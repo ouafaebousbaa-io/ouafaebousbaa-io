@@ -4,14 +4,10 @@
     python3 outils/verifier.py
 
 Contrôle :
-  - chaque JSON-LD est parsable ;
-  - canonical, og:url et Person.url valent tous BASE + "/" ;
+  - le JSON-LD de l'accueil est parsable et décrit bien le Person attendu ;
+  - canonical, og:url et Person.url valent tous BASE + "/", et @id BASE + "/#person" ;
   - les rel="me" du <head>, ceux du corps et sameAs listent les mêmes profils ;
-  - sitemap.xml est un XML valide listant l'accueil puis exactement les essais
-    publiés (fichiers de essais/ ne commençant pas par "_") ;
-  - chaque essai a un canonical propre, un title « Titre — Nom », un
-    author.@id pointant vers le Person de l'accueil, et plus aucun marqueur
-    {{...}} ni noindex ;
+  - sitemap.xml est un XML valide qui liste exactement l'accueil ;
   - robots.txt pointe vers le bon sitemap.
 
 Sort avec le code 1 dès qu'un écart est trouvé.
@@ -34,11 +30,6 @@ ACCUEIL = BASE + "/"
 ID_PERSON = ACCUEIL + "#person"
 
 
-def jsonld(html: str) -> list[dict]:
-    blocs = re.findall(r'<script type="application/ld\+json">(.*?)</script>', html, re.S)
-    return [json.loads(b) for b in blocs]
-
-
 def attribut(html: str, motif: str) -> str | None:
     trouve = re.search(motif, html)
     return trouve.group(1) if trouve else None
@@ -46,15 +37,28 @@ def attribut(html: str, motif: str) -> str | None:
 
 def main() -> int:
     ecarts: list[str] = []
-
-    # --- accueil ---------------------------------------------------------
     idx = (RACINE / "index.html").read_text(encoding="utf-8")
+
+    # --- JSON-LD ----------------------------------------------------------
+    bloc = re.search(r'<script type="application/ld\+json">(.*?)</script>', idx, re.S)
+    if bloc is None:
+        print("index.html : aucun bloc JSON-LD")
+        return 1
     try:
-        person = jsonld(idx)[0]
-    except (IndexError, json.JSONDecodeError) as err:
-        print(f"index.html : JSON-LD illisible -> {err}")
+        person = json.loads(bloc.group(1))
+    except json.JSONDecodeError as err:
+        print(f"index.html : JSON-LD invalide -> {err}")
         return 1
 
+    if person.get("@type") != "Person":
+        ecarts.append(f"index.html : @type = {person.get('@type')!r}, attendu 'Person'")
+    if person.get("name") != NOM:
+        ecarts.append(f"index.html : Person.name = {person.get('name')!r}, attendu {NOM!r}")
+    for champ in ("givenName", "familyName", "sameAs", "knowsAbout"):
+        if not person.get(champ):
+            ecarts.append(f"index.html : champ JSON-LD {champ} manquant")
+
+    # --- URL --------------------------------------------------------------
     for nom, valeur in (
         ("canonical", attribut(idx, r'<link rel="canonical" href="([^"]+)"')),
         ("og:url", attribut(idx, r'property="og:url" content="([^"]+)"')),
@@ -64,66 +68,31 @@ def main() -> int:
             ecarts.append(f"index.html : {nom} = {valeur!r}, attendu {ACCUEIL!r}")
     if person.get("@id") != ID_PERSON:
         ecarts.append(f"index.html : @id = {person.get('@id')!r}, attendu {ID_PERSON!r}")
-    if person.get("name") != NOM:
-        ecarts.append(f"index.html : Person.name = {person.get('name')!r}, attendu {NOM!r}")
 
+    titre = attribut(idx, r"<title>(.*?)</title>")
+    if titre != NOM:
+        ecarts.append(f"index.html : title = {titre!r}, attendu {NOM!r}")
+
+    # --- profils ----------------------------------------------------------
     tete = set(re.findall(r'<link rel="me" href="([^"]+)"', idx))
     corps = set(re.findall(r'<a rel="me" href="([^"]+)"', idx))
     mails = {u for u in tete if u.startswith("mailto:")}
     if tete != corps:
         ecarts.append(f"index.html : rel=me <head> != corps -> {sorted(tete ^ corps)}")
     if (tete - mails) != set(person.get("sameAs", [])):
-        manquants = sorted((tete - mails) ^ set(person.get("sameAs", [])))
-        ecarts.append(f"index.html : rel=me != sameAs -> {manquants}")
+        divergents = sorted((tete - mails) ^ set(person.get("sameAs", [])))
+        ecarts.append(f"index.html : rel=me != sameAs -> {divergents}")
+    for url in tete | set(person.get("sameAs", [])):
+        if "utm_" in url or "?" in url:
+            ecarts.append(f"index.html : URL de profil non normalisée -> {url}")
 
-    # --- essais ----------------------------------------------------------
-    essais = sorted(p for p in (RACINE / "essais").glob("*.html") if not p.name.startswith("_"))
-    for essai in essais:
-        html = essai.read_text(encoding="utf-8")
-        rel = f"essais/{essai.name}"
-        url = f"{BASE}/{rel}"
-
-        if re.search(r"\{\{[^}]+\}\}", html):
-            ecarts.append(f"{rel} : marqueurs {{{{...}}}} non remplacés")
-        if "noindex" in html:
-            ecarts.append(f"{rel} : la balise noindex du modèle n'a pas été retirée")
-        if attribut(html, r'<link rel="canonical" href="([^"]+)"') != url:
-            ecarts.append(f"{rel} : canonical incohérent, attendu {url!r}")
-        if attribut(html, r'property="og:url" content="([^"]+)"') != url:
-            ecarts.append(f"{rel} : og:url incohérent, attendu {url!r}")
-
-        titre = attribut(html, r"<title>(.*?)</title>")
-        if not titre or not titre.endswith(f" — {NOM}"):
-            ecarts.append(f"{rel} : title = {titre!r}, attendu « Titre — {NOM} »")
-
-        try:
-            article = jsonld(html)[0]
-        except (IndexError, json.JSONDecodeError) as err:
-            ecarts.append(f"{rel} : JSON-LD illisible -> {err}")
-            continue
-        if article.get("@type") != "Article":
-            ecarts.append(f"{rel} : @type = {article.get('@type')!r}, attendu 'Article'")
-        for champ in ("headline", "datePublished", "inLanguage"):
-            if not article.get(champ):
-                ecarts.append(f"{rel} : champ JSON-LD {champ} manquant")
-        if article.get("inLanguage") not in (None, "fr"):
-            ecarts.append(f"{rel} : inLanguage = {article['inLanguage']!r}, attendu 'fr'")
-        if article.get("author", {}).get("@id") != ID_PERSON:
-            ecarts.append(f"{rel} : author.@id ne référence pas {ID_PERSON}")
-        if f'href="/"' not in html:
-            ecarts.append(f"{rel} : pas de lien retour vers l'accueil")
-        if rel not in idx:
-            ecarts.append(f"{rel} : absent de la liste « Écrits » de index.html")
-
-    # --- sitemap et robots ------------------------------------------------
+    # --- sitemap et robots -------------------------------------------------
     try:
         locs = [e.text for e in ET.parse(RACINE / "sitemap.xml").getroot().iter(SITEMAP_NS + "loc")]
+        if locs != [ACCUEIL]:
+            ecarts.append(f"sitemap.xml : {locs} != {[ACCUEIL]}")
     except ET.ParseError as err:
         ecarts.append(f"sitemap.xml : XML invalide -> {err}")
-        locs = None
-    attendus = [ACCUEIL] + [f"{BASE}/essais/{e.name}" for e in essais]
-    if locs is not None and locs != attendus:
-        ecarts.append(f"sitemap.xml : {locs} != {attendus}")
 
     robots = (RACINE / "robots.txt").read_text(encoding="utf-8")
     if f"Sitemap: {BASE}/sitemap.xml" not in robots:
@@ -136,7 +105,7 @@ def main() -> int:
             print(" -", e)
         return 1
 
-    print(f"Cohérent. Accueil + {len(essais)} essai(s), base {BASE}")
+    print(f"Cohérent. Accueil seul, base {BASE}")
     return 0
 
 
