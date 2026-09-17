@@ -30,7 +30,6 @@ Ces valeurs apparaissent dans `index.html` (`canonical`, `og:url`,
 | GitHub | https://github.com/ouafaebousbaa-io |
 | LinkedIn | https://www.linkedin.com/in/ouafae-bousbaa-b40099126/ |
 | Goodreads | https://www.goodreads.com/user/show/116270179-ouafae-bousbaa |
-| Email | wafaa.bousbaa@gmail.com |
 
 Après toute modification :
 
@@ -42,6 +41,10 @@ Il relit `index.html`, `sitemap.xml` et `robots.txt` et signale les écarts :
 JSON-LD illisible, `canonical` / `og:url` / `@id` divergents, `rel="me"` et
 `sameAs` désynchronisés, URL de profil polluée par des paramètres de suivi,
 sitemap ou ligne `Sitemap:` incohérents.
+
+Aucune adresse email n'apparaît sur la page, ni en `mailto:` ni dans le
+JSON-LD : la section Contact renvoie vers LinkedIn. Une page indexée qui
+expose une adresse en clair se fait récolter par les robots à spam.
 
 ## Ajouter un profil
 
