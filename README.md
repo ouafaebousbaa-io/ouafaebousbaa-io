@@ -8,7 +8,7 @@ JavaScript. Objectif : faire remonter le nom et les profils dans Google.
 ## Structure
 
 ```
-index.html          la page (nom, présentation, Ailleurs, Contact)
+index.html          la page (nom, présentation, Ailleurs)
 assets/style.css    feuille de style
 sitemap.xml         l'accueil
 robots.txt          autorise tout, pointe vers le sitemap
@@ -29,7 +29,6 @@ Ces valeurs apparaissent dans `index.html` (`canonical`, `og:url`,
 | `@id` du Person | https://ouafaebousbaa-io.github.io/#person |
 | GitHub | https://github.com/ouafaebousbaa-io |
 | LinkedIn | https://www.linkedin.com/in/ouafae-bousbaa-b40099126/ |
-| Goodreads | https://www.goodreads.com/user/show/116270179-ouafae-bousbaa |
 
 Après toute modification :
 
@@ -42,9 +41,10 @@ JSON-LD illisible, `canonical` / `og:url` / `@id` divergents, `rel="me"` et
 `sameAs` désynchronisés, URL de profil polluée par des paramètres de suivi,
 sitemap ou ligne `Sitemap:` incohérents.
 
-Aucune adresse email n'apparaît sur la page, ni en `mailto:` ni dans le
-JSON-LD : la section Contact renvoie vers LinkedIn. Une page indexée qui
-expose une adresse en clair se fait récolter par les robots à spam.
+La page ne comporte aucune section Contact et aucune adresse email, ni en
+`mailto:` ni dans le JSON-LD : une page indexée qui expose une adresse en
+clair se fait récolter par les robots à spam. Le contact passe par les
+profils listés dans Ailleurs.
 
 ## Ajouter un profil
 
