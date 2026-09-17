@@ -1,0 +1,159 @@
+/* Ouafae Bousbaa — feuille de style partagée.
+   Une colonne, une seule famille de caractères, pas d'animation. */
+
+:root {
+  color-scheme: light dark;
+  --fond: #fdfdfb;
+  --texte: #1c1b19;
+  --texte-doux: #5c5952;
+  --lien: #1c1b19;
+  --trait: #d8d4cb;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fond: #15161a;
+    --texte: #e7e4dd;
+    --texte-doux: #a09c93;
+    --lien: #e7e4dd;
+    --trait: #33353c;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 100%;
+}
+
+body {
+  margin: 0 auto;
+  padding: 4rem 1.25rem 6rem;
+  max-width: 34rem;
+  background: var(--fond);
+  color: var(--texte);
+  font-family: "EB Garamond", Garamond, Georgia, "Times New Roman", serif;
+  font-size: 1.125rem;
+  line-height: 1.6;
+  text-align: left;
+  -webkit-text-size-adjust: 100%;
+}
+
+h1 {
+  margin: 0 0 0.75rem;
+  font-size: 2rem;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+}
+
+h2 {
+  margin: 3rem 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--texte-doux);
+}
+
+h3 {
+  margin: 2rem 0 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 400;
+}
+
+p {
+  margin: 0 0 1rem;
+}
+
+.presentation {
+  margin-bottom: 0;
+  color: var(--texte-doux);
+}
+
+a {
+  color: var(--lien);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  text-decoration-thickness: 1px;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+a:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  text-decoration: none;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+li {
+  margin-bottom: 0.5rem;
+}
+
+li .date {
+  color: var(--texte-doux);
+  font-variant-numeric: oldstyle-nums;
+}
+
+.vide {
+  color: var(--texte-doux);
+  font-style: italic;
+}
+
+/* Essais */
+
+article header {
+  margin-bottom: 2.5rem;
+}
+
+article h1 {
+  margin-bottom: 0.5rem;
+}
+
+article time {
+  color: var(--texte-doux);
+  font-variant-numeric: oldstyle-nums;
+}
+
+blockquote {
+  margin: 1.5rem 0;
+  padding-left: 1rem;
+  border-left: 1px solid var(--trait);
+  color: var(--texte-doux);
+}
+
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--trait);
+}
+
+footer {
+  margin-top: 4rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--trait);
+  color: var(--texte-doux);
+}
+
+@media (max-width: 34rem) {
+  body {
+    padding: 2.5rem 1rem 4rem;
+    font-size: 1.0625rem;
+  }
+
+  h1 {
+    font-size: 1.625rem;
+  }
+}
